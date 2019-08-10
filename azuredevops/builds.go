@@ -88,6 +88,11 @@ type Build struct {
 	TriggerBuild *Build   `json:"triggeredByBuild,omitempty"`
 	URI          string   `json:"uri,omitempty"`
 	URL          string   `json:"url,omitempty"`
+	TriggerInfo  struct {
+		CiSourceBranch string `json:"ci.sourceBranch"`
+		CiSourceSha    string `json:"ci.sourceSha"`
+		CiMessage      string `json:"ci.message"`
+	} `json:"triggerInfo"`
 }
 
 // BuildListOrder is enum type for build list order
@@ -146,4 +151,31 @@ func (s *BuildsService) List(opts *BuildsListOptions) ([]Build, error) {
 	_, err = s.client.Execute(request, &response)
 
 	return response.Builds, err
+}
+
+// QueueBuildOptions describes what the request to the API should look like
+type QueueBuildOptions struct {
+	IgnoreWarnings bool   `url:"ignoreWarnings,omitempty"`
+	CheckInTicket  string `url:"checkInTicket,omitempty"`
+}
+
+// Queue inserts new build creation to queue
+// utilising https://docs.microsoft.com/en-us/rest/api/vsts/build/builds/queue?view=vsts-rest-4.1
+func (s *BuildsService) Queue(build *Build, opts *QueueBuildOptions) error {
+	URL := "_apis/build/builds?api-version=4.1"
+	URL, err := addOptions(URL, opts)
+
+	if err != nil {
+		return err
+	}
+
+	request, err := s.client.NewRequest("POST", URL, build)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.Execute(request, &build)
+
+	return err
 }
